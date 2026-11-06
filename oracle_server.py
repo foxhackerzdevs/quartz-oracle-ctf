@@ -19,6 +19,8 @@ import os
 
 HOST = '0.0.0.0'
 PORT = int(os.environ.get('ORACLE_PORT', 9998))
+MAX_LINE = 4096
+IDLE_TIMEOUT = 30.0
 
 N = int(os.environ.get('ORACLE_N', '0'))
 D = int(os.environ.get('ORACLE_D', '0'))
@@ -48,6 +50,7 @@ def vulnerable_pow(base, exponent, modulus):
 
 def handle_client(conn):
     with conn:
+        conn.settimeout(IDLE_TIMEOUT)
         conn.sendall(f"N={N}\ne={E}\n".encode())
         buf = b""
         while True:
@@ -55,10 +58,16 @@ def handle_client(conn):
             if not chunk:
                 return
             buf += chunk
+            if b"\n" not in buf and len(buf) > MAX_LINE:
+                conn.sendall(b"ERROR input too long\n")
+                return
             while b"\n" in buf:
                 line, buf = buf.split(b"\n", 1)
                 line = line.strip()
                 if not line:
+                    continue
+                if len(line) > MAX_LINE:
+                    conn.sendall(b"ERROR input too long\n")
                     continue
                 if line == b"QUIT":
                     return
