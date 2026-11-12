@@ -12,6 +12,10 @@ Protocol (one query per line, newline-terminated):
   Request:  hex-encoded ciphertext (integer), e.g. "1a2b3c\\n"
   Response: "<elapsed_seconds>\\n" -- the server's own precise
             wall-clock time spent computing pow(c, d, N)
+
+A connection is capped at ORACLE_MAX_QUERIES queries (default 5000) and
+ORACLE_SESSION_SECONDS of wall time (default 1800), so a single client
+cannot hold the serial oracle indefinitely.
 """
 import socket
 import time
@@ -21,6 +25,8 @@ HOST = '0.0.0.0'
 PORT = int(os.environ.get('ORACLE_PORT', 9998))
 MAX_LINE = 4096
 IDLE_TIMEOUT = 30.0
+MAX_QUERIES = int(os.environ.get('ORACLE_MAX_QUERIES', '5000'))
+SESSION_SECONDS = float(os.environ.get('ORACLE_SESSION_SECONDS', '1800'))
 
 N = int(os.environ.get('ORACLE_N', '0'))
 D = int(os.environ.get('ORACLE_D', '0'))
@@ -52,6 +58,8 @@ def handle_client(conn):
     with conn:
         conn.settimeout(IDLE_TIMEOUT)
         conn.sendall(f"N={N}\ne={E}\n".encode())
+        deadline = time.monotonic() + SESSION_SECONDS
+        served = 0
         buf = b""
         while True:
             chunk = conn.recv(4096)
@@ -76,10 +84,14 @@ def handle_client(conn):
                 except ValueError:
                     conn.sendall(b"ERROR invalid input\n")
                     continue
+                if served >= MAX_QUERIES or time.monotonic() >= deadline:
+                    conn.sendall(b"ERROR session limit reached\n")
+                    return
                 t0 = time.perf_counter()
                 vulnerable_pow(c, D, N)
                 elapsed = time.perf_counter() - t0
                 conn.sendall(f"{elapsed:.9f}\n".encode())
+                served += 1
 
 
 def main():

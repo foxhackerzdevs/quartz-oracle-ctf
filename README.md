@@ -19,6 +19,14 @@ The server announces `N` and `e` on connect, then accepts hex-encoded ciphertext
 
 Recover the secret number `m` such that `pow(m, 65537, 40723) == 21494`.
 
+## Session limits
+
+The oracle handles one client at a time, deliberately: concurrent clients would
+perturb the timing measurements. A single connection is therefore capped at
+5,000 queries and 30 minutes of wall time, whichever comes first; either limit
+closes the session with `ERROR session limit reached`. Connections idle for 30
+seconds are dropped. Reconnect to start a fresh budget.
+
 ## A note on scope
 
 This is a teaching-scale challenge (16-bit modulus), not a production-strength crypto CTF. The oracle's design is a real, working Kocher-style timing side-channel -- extra computation time is spent whenever an intermediate value crosses N/2 during modular exponentiation, a simplified analogue of Montgomery multiplication's real data-dependent "extra reduction" step. That part is genuine and scales conceptually to real RSA key sizes.
