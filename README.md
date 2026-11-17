@@ -27,6 +27,9 @@ perturb the timing measurements. A single connection is therefore capped at
 closes the session with `ERROR session limit reached`. Connections idle for 30
 seconds are dropped. Reconnect to start a fresh budget.
 
+The listener can be moved with `ORACLE_BIND` and `ORACLE_PORT` (default
+`0.0.0.0:9998`) — the live deployment binds loopback and fronts it with nginx.
+
 ## A note on scope
 
 This is a teaching-scale challenge (16-bit modulus), not a production-strength crypto CTF. The oracle's design is a real, working Kocher-style timing side-channel -- extra computation time is spent whenever an intermediate value crosses N/2 during modular exponentiation, a simplified analogue of Montgomery multiplication's real data-dependent "extra reduction" step. That part is genuine and scales conceptually to real RSA key sizes.

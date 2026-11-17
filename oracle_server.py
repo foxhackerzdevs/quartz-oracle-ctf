@@ -21,8 +21,8 @@ import socket
 import time
 import os
 
-HOST = '0.0.0.0'
-PORT = int(os.environ.get('ORACLE_PORT', 9998))
+HOST = os.environ.get('ORACLE_BIND', '0.0.0.0')
+PORT = int(os.environ.get('ORACLE_PORT', '9998'))
 MAX_LINE = 4096
 IDLE_TIMEOUT = 30.0
 MAX_QUERIES = int(os.environ.get('ORACLE_MAX_QUERIES', '5000'))
