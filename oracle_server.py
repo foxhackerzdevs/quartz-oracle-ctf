@@ -62,6 +62,9 @@ def handle_client(conn):
         served = 0
         buf = b""
         while True:
+            if served >= MAX_QUERIES or time.monotonic() >= deadline:
+                conn.sendall(b"ERROR session limit reached\n")
+                return
             chunk = conn.recv(4096)
             if not chunk:
                 return
@@ -70,6 +73,9 @@ def handle_client(conn):
                 conn.sendall(b"ERROR input too long\n")
                 return
             while b"\n" in buf:
+                if served >= MAX_QUERIES or time.monotonic() >= deadline:
+                    conn.sendall(b"ERROR session limit reached\n")
+                    return
                 line, buf = buf.split(b"\n", 1)
                 line = line.strip()
                 if not line:
@@ -84,9 +90,6 @@ def handle_client(conn):
                 except ValueError:
                     conn.sendall(b"ERROR invalid input\n")
                     continue
-                if served >= MAX_QUERIES or time.monotonic() >= deadline:
-                    conn.sendall(b"ERROR session limit reached\n")
-                    return
                 t0 = time.perf_counter()
                 vulnerable_pow(c, D, N)
                 elapsed = time.perf_counter() - t0

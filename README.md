@@ -27,6 +27,12 @@ perturb the timing measurements. A single connection is therefore capped at
 closes the session with `ERROR session limit reached`. Connections idle for 30
 seconds are dropped. Reconnect to start a fresh budget.
 
+The wall clock is checked before every read and every line, so junk input —
+invalid hex, oversized lines, or bytes with no newline — cannot extend a
+session past its deadline even though it does not count toward the query
+budget. A session that spends its last query is closed immediately after the
+reply, without waiting for one more request.
+
 The listener can be moved with `ORACLE_BIND` and `ORACLE_PORT` (default
 `0.0.0.0:9998`) — the live deployment binds loopback and fronts it with nginx.
 
